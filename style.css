@@ -235,19 +235,19 @@ body {
     flex-shrink: 0;
 }
 
-.status-icon-wrapper.good {
+.status-icon-wrapper.normal {
     background: var(--success-bg);
     color: var(--success);
     box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
 }
 
-.status-icon-wrapper.warning {
+.status-icon-wrapper.cek {
     background: var(--warning-bg);
     color: var(--warning);
     box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
 }
 
-.status-icon-wrapper.bad {
+.status-icon-wrapper.ganti {
     background: var(--danger-bg);
     color: var(--danger);
     box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
@@ -260,15 +260,15 @@ body {
     line-height: 1.2;
 }
 
-.status-info h3.good-text {
+.status-info h3.normal-text {
     color: var(--success);
 }
 
-.status-info h3.warning-text {
+.status-info h3.cek-text {
     color: var(--warning);
 }
 
-.status-info h3.bad-text {
+.status-info h3.ganti-text {
     color: var(--danger);
 }
 
@@ -276,6 +276,38 @@ body {
     color: var(--text-muted);
     line-height: 1.5;
     font-size: 14px;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 8px;
+    text-align: center;
+    width: 100%;
+}
+
+.status-badge.badge-normal {
+    background: var(--success-bg);
+    color: var(--success-dark);
+}
+
+.status-badge.badge-cek {
+    background: var(--warning-bg);
+    color: var(--warning-dark);
+}
+
+.status-badge.badge-ganti {
+    background: var(--danger-bg);
+    color: var(--danger-dark);
+}
+
+.status-badge.badge-neutral {
+    background: var(--neutral-bg);
+    color: var(--neutral);
 }
 
 /* ============ PARAMETERS CARD ============ */
