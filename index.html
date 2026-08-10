@@ -33,7 +33,7 @@
                 <div class="header-icon">💧</div>
                 <div>
                     <h1 class="text-gradient">Smart RO Console</h1>
-                    <p>Monitoring Kualitas Air Real-time</p>
+                    <p>Monitoring Kualitas Air RO Real-time</p>
                 </div>
             </div>
             
@@ -58,7 +58,7 @@
             
             <!-- STATUS KUALITAS AIR -->
             <section class="card status-card">
-                <h2>Status Kualitas Air</h2>
+                <h2>Status Kualitas Air RO</h2>
                 <div class="status-display">
                     <div id="statusIconWrapper" class="status-icon-wrapper">
                         <span>⏳</span>
@@ -73,7 +73,7 @@
 
             <!-- PARAMETER SENSOR -->
             <section class="card parameters-card">
-                <h2>Parameter Sensor</h2>
+                <h2>Parameter Air RO</h2>
                 <div class="params-grid">
                     <div class="param-box">
                         <div class="param-header">
@@ -81,6 +81,7 @@
                             <span id="phBadge" class="param-badge neutral">--</span>
                         </div>
                         <div class="param-value"><span id="phValue">0.0</span> <span class="unit">pH</span></div>
+                        <div class="param-range">Normal: 6.5 - 8.5</div>
                     </div>
                     
                     <div class="param-box">
@@ -89,6 +90,7 @@
                             <span id="tdsBadge" class="param-badge neutral">--</span>
                         </div>
                         <div class="param-value"><span id="tdsValue">0</span> <span class="unit">ppm</span></div>
+                        <div class="param-range">Normal: 0 - 200 ppm</div>
                     </div>
 
                     <div class="param-box">
@@ -97,6 +99,7 @@
                             <span id="turbBadge" class="param-badge neutral">--</span>
                         </div>
                         <div class="param-value"><span id="turbidityValue">0.0</span> <span class="unit">NTU</span></div>
+                        <div class="param-range">Normal: 0 - 6 NTU</div>
                     </div>
 
                     <div class="param-box">
@@ -105,6 +108,7 @@
                             <span id="tempBadge" class="param-badge neutral">--</span>
                         </div>
                         <div class="param-value"><span id="tempValue">0.0</span> <span class="unit">°C</span></div>
+                        <div class="param-range">Normal: 20 - 30 °C</div>
                     </div>
                 </div>
             </section>
@@ -137,6 +141,13 @@
                             <span id="volumeTotal" class="stat-val">0.0 L</span>
                         </div>
                     </div>
+                    <div class="stat-item">
+                        <span>⏱️</span>
+                        <div class="stat-text">
+                            <span class="stat-label">Debit Air</span>
+                            <span id="flowRate" class="stat-val">0.0 L/menit</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -149,7 +160,7 @@
                         <span id="filterReplaceStatus" class="insight-val badge-neutral">⏳ Menunggu</span>
                     </div>
                     <div class="insight-row">
-                        <span class="insight-label">Skor:</span>
+                        <span class="insight-label">Skor Filter:</span>
                         <span id="filterReplaceScore" class="insight-val text-bold">0/100</span>
                     </div>
                     <div class="insight-row">
@@ -163,6 +174,10 @@
                     <div class="insight-box highlight">
                         <h4>💡 Rekomendasi</h4>
                         <p id="filterReplaceRecommend">Silakan tunggu sinkronisasi data...</p>
+                    </div>
+                    <div class="insight-box parameter-info">
+                        <h4>📊 Parameter Normal RO</h4>
+                        <p>pH: 6.5 - 8.5 | TDS: 0 - 200 ppm | Kekeruhan: 0 - 6 NTU | Suhu: 20 - 30 °C</p>
                     </div>
                 </div>
             </section>
