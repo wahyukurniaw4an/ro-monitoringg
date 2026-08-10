@@ -1,7 +1,11 @@
 /**
  * ============================================================
  * SMART RO WATER QUALITY MONITOR - MQTT Web Client
- * BAHASA INDONESIA
+ * PARAMETER RO YANG BENAR:
+ * - pH: 6.5 - 8.5
+ * - TDS: 0 - 200 ppm
+ * - Kekeruhan: 0 - 6 NTU
+ * - Suhu: 20 - 30 °C
  * STATUS: NORMAL / CEK FILTER / GANTI FILTER
  * ============================================================
  */
@@ -12,6 +16,16 @@ const MQTT_TOPIC = "watermon/all";
 
 let client = null;
 let messageCount = 0;
+
+// ==================== PARAMETER RO ====================
+const PARAM_RO = {
+    phMin: 6.5,
+    phMax: 8.5,
+    tdsMax: 200,
+    ntuMax: 6,
+    tempMin: 20,
+    tempMax: 30
+};
 
 // ==================== DOM REFERENCES ====================
 const DOM = {
@@ -31,6 +45,7 @@ const DOM = {
     healthBar: document.getElementById('healthBar'),
     daysLeft: document.getElementById('daysLeft'),
     volumeTotal: document.getElementById('volumeTotal'),
+    flowRate: document.getElementById('flowRate'),
     phValue: document.getElementById('phValue'),
     tdsValue: document.getElementById('tdsValue'),
     turbidityValue: document.getElementById('turbidityValue'),
@@ -64,15 +79,14 @@ let state = {
     volume: null,
     flowRate: null,
     filterScore: null,
-    // Status baru
-    waterStatus: 'MENUNGGU',     // NORMAL / CEK FILTER / GANTI FILTER
-    waterStatusClass: 'neutral', // normal / cek / ganti
+    waterStatus: 'MENUNGGU',
+    waterStatusClass: 'neutral',
     anomalyList: [],
     anomalyCount: 0,
 };
 
-// ==================== PARAMETER VALIDATION ====================
-function checkParameter(value, min, max, name) {
+// ==================== CHECK PARAMETER RO ====================
+function checkParameterRO(value, min, max, name) {
     if (value === null || value === undefined) return { valid: true, anomaly: false };
     if (value < min || value > max) {
         return { valid: false, anomaly: true, name: name, value: value, min: min, max: max };
@@ -80,25 +94,25 @@ function checkParameter(value, min, max, name) {
     return { valid: true, anomaly: false };
 }
 
-function checkAllParameters(ph, tds, turbidity, temp) {
+function checkAllParametersRO(ph, tds, turbidity, temp) {
     var anomalies = [];
     
-    // pH: 6.5 - 9.8
-    var phCheck = checkParameter(ph, 6.5, 9.8, 'pH');
+    // pH: 6.5 - 8.5
+    var phCheck = checkParameterRO(ph, 6.5, 8.5, 'pH');
     if (phCheck.anomaly) anomalies.push('pH (' + ph.toFixed(2) + ')');
     
-    // TDS: < 50 ppm (ideal)
-    if (tds !== null && tds > 50) {
+    // TDS: 0 - 200 ppm
+    if (tds !== null && tds > 200) {
         anomalies.push('TDS (' + Math.round(tds) + ' ppm)');
     }
     
-    // Turbidity: < 5 NTU
-    if (turbidity !== null && turbidity > 5) {
+    // Kekeruhan: 0 - 6 NTU
+    if (turbidity !== null && turbidity > 6) {
         anomalies.push('Kekeruhan (' + turbidity.toFixed(2) + ' NTU)');
     }
     
-    // Temperature: 15 - 35 °C
-    var tempCheck = checkParameter(temp, 15, 35, 'Suhu');
+    // Suhu: 20 - 30 °C
+    var tempCheck = checkParameterRO(temp, 20, 30, 'Suhu');
     if (tempCheck.anomaly) anomalies.push('Suhu (' + temp.toFixed(1) + '°C)');
     
     return anomalies;
@@ -115,7 +129,7 @@ function determineWaterStatus(anomalies) {
             class: 'normal',
             text: '✅ NORMAL',
             badge: 'badge-normal',
-            detail: 'Semua parameter dalam batas normal. Air aman dikonsumsi.',
+            detail: 'Semua parameter dalam batas normal. Air RO aman dikonsumsi.',
             icon: '✅',
             reason: 'Semua parameter normal',
             recommendation: 'Lanjutkan pemantauan rutin.'
@@ -230,8 +244,8 @@ function handleIncomingData(payload) {
         state.flowRate = data.flow_rate !== undefined ? data.flow_rate : null;
         state.filterScore = data.filter_score !== undefined ? data.filter_score : null;
 
-        // ========== CEK ANOMALI ==========
-        var anomalies = checkAllParameters(state.ph, state.tds, state.turbidity, state.temperature);
+        // ========== CEK ANOMALI PARAMETER RO ==========
+        var anomalies = checkAllParametersRO(state.ph, state.tds, state.turbidity, state.temperature);
         state.anomalyList = anomalies;
         state.anomalyCount = anomalies.length;
         
@@ -274,38 +288,41 @@ function updateUI() {
         DOM.lastMessage.textContent = JSON.stringify(state.lastData, null, 2);
     }
     
-    // 3. WATER STATUS (BARU)
+    // 3. WATER STATUS
     DOM.waterStatusText.textContent = state.waterStatus || 'MENUNGGU';
     DOM.waterStatusText.className = state.waterStatusClass + '-text';
     DOM.statusIconWrapper.className = 'status-icon-wrapper ' + state.waterStatusClass;
     DOM.statusIconWrapper.innerHTML = '<span>' + (state.waterStatusIcon || '⏳') + '</span>';
     DOM.statusDetail.textContent = state.waterStatusDetail || 'Menunggu data...';
     
-    // Status Badge
     if (DOM.waterStatusBadge) {
         DOM.waterStatusBadge.textContent = state.waterStatusText || '⏳ Menunggu Data';
         DOM.waterStatusBadge.className = 'status-badge ' + (state.waterStatusBadgeClass || 'badge-neutral');
     }
     
-    // 4. Sensors
+    // 4. SENSORS - Dengan parameter RO
+    // pH: 6.5 - 8.5
     if (state.ph !== null) {
         DOM.phValue.textContent = state.ph.toFixed(2);
-        updateParamBadge(DOM.phBadge, state.ph, 6.5, 9.8, "Normal", "Warn", "Anomali");
+        updateParamBadgeRO(DOM.phBadge, state.ph, 6.5, 8.5, "Normal", "Warn", "Anomali");
     }
     
+    // TDS: 0 - 200 ppm
     if (state.tds !== null) {
         DOM.tdsValue.textContent = Math.round(state.tds);
-        updateParamBadge(DOM.tdsBadge, state.tds, 0, 50, "Normal", "Warn", "Tinggi", true);
+        updateParamBadgeRO(DOM.tdsBadge, state.tds, 0, 200, "Normal", "Tinggi", "Sangat Tinggi", true);
     }
     
+    // Kekeruhan: 0 - 6 NTU
     if (state.turbidity !== null) {
         DOM.turbidityValue.textContent = state.turbidity.toFixed(2);
-        updateParamBadge(DOM.turbBadge, state.turbidity, 0, 5, "Jernih", "Keruh", "Sangat Keruh", true);
+        updateParamBadgeRO(DOM.turbBadge, state.turbidity, 0, 6, "Jernih", "Keruh", "Sangat Keruh", true);
     }
     
+    // Suhu: 20 - 30 °C
     if (state.temperature !== null) {
         DOM.tempValue.textContent = state.temperature.toFixed(1);
-        updateParamBadge(DOM.tempBadge, state.temperature, 15, 35, "Normal", "Warn", "Anomali");
+        updateParamBadgeRO(DOM.tempBadge, state.temperature, 20, 30, "Normal", "Warn", "Anomali");
     }
     
     // 5. Filter Health
@@ -331,6 +348,10 @@ function updateUI() {
         DOM.volumeTotal.textContent = state.volume.toFixed(2) + ' L';
     }
     
+    if (state.flowRate !== null) {
+        DOM.flowRate.textContent = state.flowRate.toFixed(2) + ' L/menit';
+    }
+    
     // 6. FILTER STATUS
     updateFilterStatus();
 }
@@ -338,7 +359,6 @@ function updateUI() {
 // ==================== FILTER STATUS ====================
 function updateFilterStatus() {
     var filterScore = state.filterScore || state.health || 0;
-    var daysLeft = state.daysLeft || 0;
     var anomalyCount = state.anomalyCount || 0;
     
     // Status berdasarkan waterStatus
@@ -383,8 +403,8 @@ function updateFilterStatus() {
     }
 }
 
-// ==================== BADGE HELPER ====================
-function updateParamBadge(element, value, minSafe, maxSafe, safeLabel, warnLabel, dangerLabel, isLowerBetter) {
+// ==================== BADGE HELPER PARAMETER RO ====================
+function updateParamBadgeRO(element, value, minSafe, maxSafe, safeLabel, warnLabel, dangerLabel, isLowerBetter) {
     if (isLowerBetter === undefined) isLowerBetter = false;
     
     if (value === null || value === undefined) {
@@ -397,7 +417,7 @@ function updateParamBadge(element, value, minSafe, maxSafe, safeLabel, warnLabel
         if (value <= maxSafe) {
             element.textContent = safeLabel;
             element.className = 'param-badge safe';
-        } else if (value <= maxSafe * 2) {
+        } else if (value <= maxSafe * 1.5) {
             element.textContent = warnLabel;
             element.className = 'param-badge warn';
         } else {
@@ -442,6 +462,11 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Smart RO Monitor Initialized');
     console.log('📡 MQTT Broker:', MQTT_BROKER);
     console.log('📋 Topic:', MQTT_TOPIC);
+    console.log('📊 Parameter RO:');
+    console.log('  pH: 6.5 - 8.5');
+    console.log('  TDS: 0 - 200 ppm');
+    console.log('  Kekeruhan: 0 - 6 NTU');
+    console.log('  Suhu: 20 - 30 °C');
     initMQTT();
 });
 
