@@ -3,7 +3,7 @@
  * SMART RO WATER QUALITY MONITOR - MQTT Web Client
  * FULLY SYNCHRONIZED WITH ESP32 .ino
  * WITH FILTER STATUS: NORMAL / CEK / GANTI
- * DENGAN DEBUG LOG LENGKAP
+ * FIXED SYNTAX ERROR
  * ============================================================
  */
 
@@ -236,14 +236,13 @@ function initMQTT() {
             clean: true
         });
 
-        client.on('connect', () => {
+        client.on('connect', function() {
             console.log('✅ Connected to MQTT Broker');
             state.mqttConnected = true;
             updateConnectionUI('connected', 'Broker Connected');
             DOM.mqttBadge.className = 'badge active';
             
-            // Subscribe dengan error handling
-            client.subscribe(MQTT_TOPIC, { qos: 1 }, (err) => {
+            client.subscribe(MQTT_TOPIC, { qos: 1 }, function(err) {
                 if (!err) {
                     console.log('✅ Subscribed to topic:', MQTT_TOPIC);
                     DOM.lastMessage.textContent = '✅ Subscribed to: ' + MQTT_TOPIC;
@@ -254,21 +253,15 @@ function initMQTT() {
             });
         });
 
-        client.on('message', (topic, message) => {
+        client.on('message', function(topic, message) {
             console.log('📥 Raw message received on topic:', topic);
             
             if (topic === MQTT_TOPIC) {
                 handleIncomingData(message.toString());
-            console.log('📥 Payload:', message.toString());
-            
-            if (topic === MQTT_TOPIC) {
-                handleIncomingData(message.toString());
-            } else {
-                console.log('⚠️ Ignoring topic:', topic);
             }
         });
 
-        client.on('error', (error) => {
+        client.on('error', function(error) {
             console.error('❌ MQTT Error:', error);
             state.mqttConnected = false;
             updateConnectionUI('disconnected', 'Connection Error');
@@ -277,7 +270,7 @@ function initMQTT() {
             DOM.lastMessage.textContent = '❌ MQTT Error: ' + error.message;
         });
 
-        client.on('offline', () => {
+        client.on('offline', function() {
             console.log('⚠️ MQTT Offline');
             state.mqttConnected = false;
             state.espOnline = false;
@@ -287,7 +280,7 @@ function initMQTT() {
             DOM.lastMessage.textContent = '⚠️ MQTT Offline - Reconnecting...';
         });
 
-        client.on('reconnect', () => {
+        client.on('reconnect', function() {
             console.log('🔄 MQTT Reconnecting...');
             DOM.lastMessage.textContent = '🔄 MQTT Reconnecting...';
         });
@@ -313,7 +306,6 @@ function handleIncomingData(payload) {
         state.lastData = data;
         
         // Populate state values
-        // Populate state values dengan validasi
         state.ph = data.ph !== undefined ? data.ph : null;
         state.tds = data.tds !== undefined ? data.tds : null;
         state.turbidity = data.turbidity_ntu !== undefined ? data.turbidity_ntu : null;
@@ -344,7 +336,7 @@ function handleIncomingData(payload) {
 
 function updateConnectionUI(status, text) {
     DOM.connText.textContent = text;
-    DOM.connDot.className = `dot ${status === 'connected' ? 'connected' : status === 'connecting' ? 'connecting' : 'disconnected'}`;
+    DOM.connDot.className = 'dot ' + (status === 'connected' ? 'connected' : status === 'connecting' ? 'connecting' : 'disconnected');
 }
 
 // ==================== UI UPDATES ====================
@@ -364,13 +356,13 @@ function updateUI() {
     }
     
     // 3. Overall Status
-    const status = state.status || "MENUNGGU";
+    var status = state.status || "MENUNGGU";
     DOM.waterStatusText.textContent = status;
     
-    let iconClass = 'fa-check';
-    let wrapperClass = 'status-icon-wrapper good';
-    let detailText = "Water is safe for consumption.";
-    let textClass = 'good-text';
+    var iconClass = 'fa-check';
+    var wrapperClass = 'status-icon-wrapper good';
+    var detailText = "Water is safe for consumption.";
+    var textClass = 'good-text';
     
     if (status === "TIDAK LAYAK" || status === "BAHAYA") {
         iconClass = 'fa-triangle-exclamation';
@@ -390,7 +382,7 @@ function updateUI() {
     }
     
     DOM.statusIconWrapper.className = wrapperClass;
-    DOM.statusIconWrapper.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+    DOM.statusIconWrapper.innerHTML = '<i class="fa-solid ' + iconClass + '"></i>';
     DOM.statusDetail.textContent = detailText;
     DOM.waterStatusText.className = textClass;
     
@@ -398,32 +390,28 @@ function updateUI() {
     if (state.ph !== null) {
         DOM.phValue.textContent = state.ph.toFixed(2);
         updateParamBadge(DOM.phBadge, state.ph, 6.5, 8.5, "OPTIMAL", "WARNING", "DANGER");
-        updateParamBadge(DOM.phBadge, state.ph, 6.5, 8.5, "Safe", "Warn", "Danger");
     }
     
     if (state.tds !== null) {
         DOM.tdsValue.textContent = Math.round(state.tds);
         updateParamBadge(DOM.tdsBadge, state.tds, 0, 50, "PURE", "HIGH TDS", "VERY HIGH", true);
-        updateParamBadge(DOM.tdsBadge, state.tds, 0, 100, "Pure", "Warn", "High", true);
     }
     
     if (state.turbidity !== null) {
         DOM.turbidityValue.textContent = state.turbidity.toFixed(2);
         updateParamBadge(DOM.turbBadge, state.turbidity, 0, 5, "CLEAR", "CLOUDY", "DIRTY", true);
-        updateParamBadge(DOM.turbBadge, state.turbidity, 0, 1.0, "Clear", "Cloudy", "Dirty", true);
     }
     
     if (state.temperature !== null) {
         DOM.tempValue.textContent = state.temperature.toFixed(1);
         updateParamBadge(DOM.tempBadge, state.temperature, 15, 35, "NOMINAL", "WARNING", "ALERT");
-        updateParamBadge(DOM.tempBadge, state.temperature, 15, 35, "Normal", "Warn", "Alert");
     }
     
     // 5. Filter Health & Stats
     if (state.health !== null) {
-        const health = state.health;
-        DOM.filterHealth.textContent = `${Math.round(health)}%`;
-        DOM.healthBar.style.width = `${Math.min(health, 100)}%`;
+        var health = state.health;
+        DOM.filterHealth.textContent = Math.round(health) + '%';
+        DOM.healthBar.style.width = Math.min(health, 100) + '%';
         
         if (health > 70) {
             DOM.healthBar.style.background = 'linear-gradient(90deg, #00F0FF, #00FF66)';
@@ -431,25 +419,18 @@ function updateUI() {
             DOM.healthBar.style.background = 'linear-gradient(90deg, #FFD700, #00FF66)';
         } else {
             DOM.healthBar.style.background = 'linear-gradient(90deg, #FF2A54, #FFD700)';
-        if (health > 50) {
-            DOM.healthBar.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
-        } else if (health > 20) {
-            DOM.healthBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
-        } else {
-            DOM.healthBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
         }
     }
     
     if (state.daysLeft !== null) {
-        DOM.daysLeft.textContent = `${state.daysLeft} Days`;
-        DOM.daysLeft.textContent = `${state.daysLeft} days`;
+        DOM.daysLeft.textContent = state.daysLeft + ' Days';
     }
     
     if (state.volume !== null) {
-        DOM.volumeTotal.textContent = `${state.volume.toFixed(2)} L`;
+        DOM.volumeTotal.textContent = state.volume.toFixed(2) + ' L';
     }
     
-    // 6. FILTER REPLACEMENT - DENGAN STATUS NORMAL / CEK / GANTI
+    // 6. FILTER REPLACEMENT
     updateFilterReplacement({
         needReplacement: state.filterNeedReplacement,
         filterHealth: state.health,
@@ -466,20 +447,20 @@ function updateUI() {
     updateCharts(state.ph, state.tds);
 }
 
-// ==================== FILTER REPLACEMENT - UPDATE ====================
+// ==================== FILTER REPLACEMENT ====================
 function updateFilterReplacement(data) {
     if (!data) return;
     
-    const needReplace = data.needReplacement || false;
-    const filterScore = data.filterHealth || data.filterScore || 0;
-    const filterReason = data.filterReason || "Normal";
-    const filterRecommend = data.filterRecommendation || "Lanjutkan pemantauan";
-    const daysLeft = data.daysLeft || 0;
+    var needReplace = data.needReplacement || false;
+    var filterScore = data.filterHealth || data.filterScore || 0;
+    var filterReason = data.filterReason || "Normal";
+    var filterRecommend = data.filterRecommendation || "Lanjutkan pemantauan";
+    var daysLeft = data.daysLeft || 0;
     
     // Gunakan status dari ESP32 jika ada, atau hitung ulang
-    let statusText = data.filterStatus || '';
-    let statusColor = data.filterStatusColor || '';
-    let statusEmoji = data.filterStatusEmoji || '';
+    var statusText = data.filterStatus || '';
+    var statusColor = data.filterStatusColor || '';
+    var statusEmoji = data.filterStatusEmoji || '';
     
     // Jika tidak ada status dari ESP32, hitung berdasarkan skor
     if (!statusText) {
@@ -499,15 +480,15 @@ function updateFilterReplacement(data) {
     }
     
     // DOM Elements
-    const statusElement = document.getElementById('filterReplaceStatus');
-    const scoreElement = document.getElementById('filterReplaceScore');
-    const daysElement = document.getElementById('filterReplaceDays');
-    const reasonElement = document.getElementById('filterReplaceReason');
-    const recommendElement = document.getElementById('filterReplaceRecommend');
+    var statusElement = document.getElementById('filterReplaceStatus');
+    var scoreElement = document.getElementById('filterReplaceScore');
+    var daysElement = document.getElementById('filterReplaceDays');
+    var reasonElement = document.getElementById('filterReplaceReason');
+    var recommendElement = document.getElementById('filterReplaceRecommend');
     
     // Map color to CSS class
-    let ledClass = '';
-    let textClass = '';
+    var ledClass = 'led-green';
+    var textClass = 'text-filter-normal';
     
     switch(statusColor.toUpperCase()) {
         case 'GREEN':
@@ -527,13 +508,12 @@ function updateFilterReplacement(data) {
             textClass = 'text-filter-normal';
     }
     
-    // ========== UPDATE UI ==========
+    // UPDATE UI
     if (statusElement) {
-        statusElement.innerHTML = `
-            <span class="status-led ${ledClass}"></span>
-            <span class="${textClass}">${statusEmoji} ${statusText}</span>
-            <span class="text-xs text-white/40 ml-1">(${filterScore.toFixed(0)}%)</span>
-        `;
+        statusElement.innerHTML = 
+            '<span class="status-led ' + ledClass + '"></span>' +
+            '<span class="' + textClass + '">' + statusEmoji + ' ' + statusText + '</span>' +
+            '<span class="text-xs text-white/40 ml-1">(' + filterScore.toFixed(0) + '%)</span>';
     }
     
     if (scoreElement) {
@@ -567,7 +547,9 @@ function updateFilterReplacement(data) {
 }
 
 // ==================== BADGE HELPER ====================
-function updateParamBadge(element, value, minSafe, maxSafe, safeLabel, warnLabel, dangerLabel, isLowerBetter = false) {
+function updateParamBadge(element, value, minSafe, maxSafe, safeLabel, warnLabel, dangerLabel, isLowerBetter) {
+    if (isLowerBetter === undefined) isLowerBetter = false;
+    
     if (value === null || value === undefined) {
         element.textContent = '--';
         element.className = 'inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-white/40 border border-white/10 uppercase tracking-wider';
@@ -595,70 +577,15 @@ function updateParamBadge(element, value, minSafe, maxSafe, safeLabel, warnLabel
         } else {
             element.textContent = warnLabel;
             element.className = 'inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-[#FFD700]/15 text-[#FFD700] border border-[#FFD700]/30 uppercase tracking-wider';
-    // 6. Maintenance Insights
-    if (state.filterNeedReplacement) {
-        DOM.filterReplaceStatus.textContent = "Replace Now";
-        DOM.filterReplaceStatus.className = "insight-val badge-danger";
-    } else if (state.health !== null && state.health <= 30) {
-        DOM.filterReplaceStatus.textContent = "Prepare to Replace";
-        DOM.filterReplaceStatus.className = "insight-val badge-warning";
-    } else {
-        DOM.filterReplaceStatus.textContent = "Good Condition";
-        DOM.filterReplaceStatus.className = "insight-val badge-success";
-    }
-    
-    if (state.filterScore !== null) {
-        DOM.filterReplaceScore.textContent = `${Math.round(state.filterScore)}/100`;
-    }
-    
-    if (state.filterReason) {
-        DOM.filterReplaceReason.textContent = state.filterReason;
-    }
-    
-    if (state.filterRecommendation) {
-        DOM.filterReplaceRecommend.textContent = state.filterRecommendation;
-    }
-    
-    console.log('✅ UI Update complete');
-}
-
-function updateParamBadge(element, value, minSafe, maxSafe, safeLabel, warnLabel, dangerLabel, isLowerBetter = false) {
-    if (value === null || value === undefined) {
-        element.textContent = '--';
-        element.className = 'param-badge neutral';
-        return;
-    }
-    
-    if (isLowerBetter) {
-        if (value <= maxSafe) {
-            element.textContent = safeLabel;
-            element.className = 'param-badge safe';
-        } else if (value <= maxSafe * 2) {
-            element.textContent = warnLabel;
-            element.className = 'param-badge warn';
-        } else {
-            element.textContent = dangerLabel;
-            element.className = 'param-badge danger';
-        }
-    } else {
-        if (value >= minSafe && value <= maxSafe) {
-            element.textContent = safeLabel;
-            element.className = 'param-badge safe';
-        } else if (value < minSafe - 1 || value > maxSafe + 1) {
-            element.textContent = dangerLabel;
-            element.className = 'param-badge danger';
-        } else {
-            element.textContent = warnLabel;
-            element.className = 'param-badge warn';
         }
     }
 }
 
 // ==================== AUTO-RECONNECT ====================
-setInterval(() => {
+setInterval(function() {
     if (state.lastUpdateTime) {
-        const now = new Date();
-        const diff = (now - state.lastUpdateTime) / 1000;
+        var now = new Date();
+        var diff = (now - state.lastUpdateTime) / 1000;
         if (diff > 15 && state.espOnline) {
             state.espOnline = false;
             DOM.espBadge.className = 'badge inactive';
@@ -666,19 +593,7 @@ setInterval(() => {
     }
 }, 5000);
 
-// ==================== AUTO-RECONNECT ====================
-setInterval(() => {
-    if (state.lastUpdateTime) {
-        const now = new Date();
-        const diff = (now - state.lastUpdateTime) / 1000;
-        if (diff > 15 && state.espOnline) {
-            state.espOnline = false;
-            DOM.espBadge.className = 'badge inactive';
-        }
-    }
-}, 5000);
-
-setInterval(() => {
+setInterval(function() {
     if (!state.mqttConnected && client) {
         console.log('🔄 Auto-reconnect triggered...');
         client.reconnect();
@@ -686,7 +601,7 @@ setInterval(() => {
 }, 30000);
 
 // ==================== INITIALIZE ====================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Smart RO Monitor Initialized');
     console.log('📡 MQTT Broker:', MQTT_BROKER);
     console.log('📋 Topic:', MQTT_TOPIC);
