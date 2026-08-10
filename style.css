@@ -1,5 +1,6 @@
 /* ============================================================
    SMART RO WATER QUALITY MONITOR - STYLE.CSS
+   WITH FILTER STATUS LED INDICATORS
    Light/Dark Theme with Modern UI
    ============================================================ */
 
@@ -359,6 +360,73 @@ body {
     margin-left: 0.25rem;
 }
 
+/* ---------- FILTER STATUS LED ---------- */
+.status-led {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    animation: pulse-led 2s infinite;
+    flex-shrink: 0;
+}
+
+.status-led.led-green {
+    background: #00FF66;
+    box-shadow: 0 0 16px rgba(0, 255, 102, 0.6);
+}
+
+.status-led.led-yellow {
+    background: #FFD700;
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.6);
+    animation: pulse-led-yellow 1.5s infinite;
+}
+
+.status-led.led-red {
+    background: #FF2A54;
+    box-shadow: 0 0 16px rgba(255, 42, 84, 0.6);
+    animation: pulse-led-red 1s infinite;
+}
+
+@keyframes pulse-led {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.95); }
+}
+
+@keyframes pulse-led-yellow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.9); }
+}
+
+@keyframes pulse-led-red {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.85); }
+}
+
+/* ---------- FILTER STATUS TEXT COLORS ---------- */
+.text-filter-normal {
+    color: #00FF66;
+}
+
+.text-filter-check {
+    color: #FFD700;
+}
+
+.text-filter-replace {
+    color: #FF2A54;
+    animation: pulse-text 1s infinite;
+}
+
+@keyframes pulse-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ---------- PROGRESS BAR ---------- */
+.cyber-progress {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 99px;
+    overflow: hidden;
+    height: 8px;
 /* ============ FILTER CARD ============ */
 .filter-health-container {
     margin-bottom: 1.5rem;
