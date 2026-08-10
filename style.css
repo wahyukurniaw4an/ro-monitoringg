@@ -360,7 +360,7 @@ body {
     margin-left: 0.25rem;
 }
 
-/* ---------- FILTER STATUS LED ---------- */
+/* ============ FILTER STATUS LED ============ */
 .status-led {
     display: inline-block;
     width: 14px;
@@ -402,7 +402,7 @@ body {
     50% { opacity: 0.3; transform: scale(0.85); }
 }
 
-/* ---------- FILTER STATUS TEXT COLORS ---------- */
+/* ============ FILTER STATUS TEXT ============ */
 .text-filter-normal {
     color: #00FF66;
 }
@@ -421,13 +421,7 @@ body {
     50% { opacity: 0.5; }
 }
 
-/* ---------- PROGRESS BAR ---------- */
-.cyber-progress {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 99px;
-    overflow: hidden;
-    height: 8px;
-/* ============ FILTER CARD ============ */
+/* ============ FILTER HEALTH CARD ============ */
 .filter-health-container {
     margin-bottom: 1.5rem;
 }
