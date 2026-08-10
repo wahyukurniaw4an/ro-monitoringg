@@ -9,7 +9,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Chart.js & MQTT.js - Gunakan CDN yang lebih stabil -->
+    <!-- Chart.js & MQTT.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 
@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="style.css">
 
     <style>
-        /* Fallback jika CSS tidak load */
         .dashboard-wrapper { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .glass-panel { background: rgba(255,255,255,0.95); border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         .value-display { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
@@ -34,14 +33,14 @@
                 <div class="header-icon">💧</div>
                 <div>
                     <h1 class="text-gradient">Smart RO Console</h1>
-                    <p>Real-time Water Quality Analysis</p>
+                    <p>Monitoring Kualitas Air Real-time</p>
                 </div>
             </div>
             
             <div class="connection-panel">
                 <div id="connectionContainer" class="status-indicator">
                     <span id="connectionDot" class="dot disconnected"></span>
-                    <span id="connectionText" class="status-text">Disconnected</span>
+                    <span id="connectionText" class="status-text">Terputus</span>
                 </div>
                 <div class="badges">
                     <span id="mqttBadge" class="badge neutral">MQTT</span>
@@ -49,7 +48,7 @@
                 </div>
                 <div class="meta-info">
                     <span>🕐 <span id="lastUpdate">--:--:--</span></span>
-                    <span>📦 <span id="dataCount">0</span> pkts</span>
+                    <span>📦 <span id="dataCount">0</span> paket</span>
                 </div>
             </div>
         </header>
@@ -57,27 +56,28 @@
         <!-- ============ MAIN GRID ============ -->
         <main class="dashboard-grid">
             
-            <!-- Overall Status -->
+            <!-- STATUS KUALITAS AIR -->
             <section class="card status-card">
-                <h2>Water Quality Status</h2>
+                <h2>Status Kualitas Air</h2>
                 <div class="status-display">
                     <div id="statusIconWrapper" class="status-icon-wrapper">
                         <span>⏳</span>
                     </div>
                     <div class="status-info">
-                        <h3 id="waterStatusText">WAITING</h3>
-                        <p id="statusDetail">Connecting to sensor node...</p>
+                        <h3 id="waterStatusText">MENUNGGU</h3>
+                        <p id="statusDetail">Menghubungkan ke sensor...</p>
                     </div>
                 </div>
+                <div id="waterStatusBadge" class="status-badge badge-neutral">⏳ Menunggu Data</div>
             </section>
 
-            <!-- Sensor Parameters -->
+            <!-- PARAMETER SENSOR -->
             <section class="card parameters-card">
-                <h2>Live Parameters</h2>
+                <h2>Parameter Sensor</h2>
                 <div class="params-grid">
                     <div class="param-box">
                         <div class="param-header">
-                            <span>🧪 pH Level</span>
+                            <span>🧪 pH</span>
                             <span id="phBadge" class="param-badge neutral">--</span>
                         </div>
                         <div class="param-value"><span id="phValue">0.0</span> <span class="unit">pH</span></div>
@@ -93,7 +93,7 @@
 
                     <div class="param-box">
                         <div class="param-header">
-                            <span>🌊 Turbidity</span>
+                            <span>🌊 Kekeruhan</span>
                             <span id="turbBadge" class="param-badge neutral">--</span>
                         </div>
                         <div class="param-value"><span id="turbidityValue">0.0</span> <span class="unit">NTU</span></div>
@@ -101,7 +101,7 @@
 
                     <div class="param-box">
                         <div class="param-header">
-                            <span>🌡️ Temperature</span>
+                            <span>🌡️ Suhu</span>
                             <span id="tempBadge" class="param-badge neutral">--</span>
                         </div>
                         <div class="param-value"><span id="tempValue">0.0</span> <span class="unit">°C</span></div>
@@ -109,12 +109,12 @@
                 </div>
             </section>
 
-            <!-- Filter Status -->
+            <!-- SISTEM FILTER -->
             <section class="card filter-card">
-                <h2>Filter System</h2>
+                <h2>Sistem Filter</h2>
                 <div class="filter-health-container">
                     <div class="health-header">
-                        <span>Filter Health</span>
+                        <span>Kesehatan Filter</span>
                         <span id="filterHealth" class="health-percentage">0%</span>
                     </div>
                     <div class="progress-bar">
@@ -126,8 +126,8 @@
                     <div class="stat-item">
                         <span>📅</span>
                         <div class="stat-text">
-                            <span class="stat-label">Estimated Life</span>
-                            <span id="daysLeft" class="stat-val">0 days</span>
+                            <span class="stat-label">Perkiraan Umur</span>
+                            <span id="daysLeft" class="stat-val">0 hari</span>
                         </div>
                     </div>
                     <div class="stat-item">
@@ -140,43 +140,41 @@
                 </div>
             </section>
 
-            <!-- Maintenance Insights -->
+            <!-- STATUS FILTER -->
             <section class="card maintenance-card">
-                <h2>Maintenance & Insights</h2>
+                <h2>Status Filter</h2>
                 <div class="maintenance-content">
                     <div class="insight-row">
-                        <span class="insight-label">Filter Status:</span>
-                        <span id="filterReplaceStatus" class="insight-val badge-neutral">Waiting</span>
+                        <span class="insight-label">Status Filter:</span>
+                        <span id="filterReplaceStatus" class="insight-val badge-neutral">⏳ Menunggu</span>
                     </div>
                     <div class="insight-row">
-                        <span class="insight-label">Score:</span>
+                        <span class="insight-label">Skor:</span>
                         <span id="filterReplaceScore" class="insight-val text-bold">0/100</span>
                     </div>
                     <div class="insight-row">
-                        <span class="insight-label">Days Left:</span>
-                        <span id="filterReplaceDays" class="insight-val text-bold">--</span>
+                        <span class="insight-label">Parameter Anomali:</span>
+                        <span id="anomalyCount" class="insight-val text-bold">0</span>
                     </div>
                     <div class="insight-box">
-                        <h4>📋 Reason</h4>
-                        <p id="filterReplaceReason">No data yet.</p>
+                        <h4>📋 Keterangan</h4>
+                        <p id="filterReplaceReason">Menunggu data dari sensor...</p>
                     </div>
                     <div class="insight-box highlight">
-                        <h4>💡 Recommendation</h4>
-                        <p id="filterReplaceRecommend">Please wait for data synchronization...</p>
+                        <h4>💡 Rekomendasi</h4>
+                        <p id="filterReplaceRecommend">Silakan tunggu sinkronisasi data...</p>
                     </div>
                 </div>
             </section>
 
-            <!-- Raw Data -->
+            <!-- DATA MENTAH -->
             <section class="card debug-card" style="grid-column: 1 / -1;">
-                <h2>Raw Telemetry Data</h2>
-                <pre id="lastMessage" class="code-block">Awaiting JSON payload from ESP32...</pre>
+                <h2>Data Telemetry</h2>
+                <pre id="lastMessage" class="code-block">Menunggu data JSON dari ESP32...</pre>
             </section>
         </main>
     </div>
 
-    <!-- ============ JAVASCRIPT ============ -->
     <script src="script.js"></script>
-
 </body>
 </html>
