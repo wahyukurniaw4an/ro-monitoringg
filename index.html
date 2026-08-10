@@ -9,239 +9,170 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Chart.js & MQTT.js - Ganti dengan CDN yang lebih stabil -->
+    <!-- Chart.js & MQTT.js - Gunakan CDN yang lebih stabil -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* Fallback jika CSS tidak load */
+        .dashboard-wrapper { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .glass-panel { background: rgba(255,255,255,0.95); border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .value-display { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+        .text-gradient { background: linear-gradient(135deg, #2563eb, #1d4ed8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
 </head>
 <body>
 
-    <div class="ambient-glow-1"></div>
-    <div class="ambient-glow-2"></div>
-
-    <div class="max-w-7xl mx-auto flex flex-col gap-6">
+    <div class="dashboard-wrapper">
         
         <!-- ============ HEADER ============ -->
-        <header class="glass-panel px-6 py-5 flex flex-col lg:flex-row justify-between items-center gap-6 border-t-2 border-t-[#00F0FF]/30">
-            
-            <div class="flex items-center gap-4">
-                <div class="relative w-14 h-14 flex items-center justify-center rounded-2xl bg-gradient-to-br from-ocean-700 to-ocean-900 border border-[#00F0FF]/20 shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-                    <span class="text-3xl">💧</span>
-                    <div class="absolute inset-0 border border-[#00F0FF] rounded-2xl opacity-50 animate-[spin_10s_linear_infinite]" style="border-style: dashed;"></div>
-                </div>
+        <header class="glass-panel app-header">
+            <div class="header-title">
+                <div class="header-icon">💧</div>
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-gradient">Smart RO Console</h1>
-                    <p class="text-sm text-[#00F0FF]/70 font-mono tracking-widest uppercase">System Analytics</p>
+                    <h1 class="text-gradient">Smart RO Console</h1>
+                    <p>Real-time Water Quality Analysis</p>
                 </div>
             </div>
-
-            <div class="flex flex-wrap items-center justify-center gap-4">
-                
-                <div id="connectionContainer" class="flex items-center gap-3 px-4 py-2 rounded-xl bg-ocean-800/50 border border-white/5">
-                    <span id="connectionDot" class="status-dot offline"></span>
-                    <span id="connectionText" class="text-sm font-semibold text-white/80">Connecting...</span>
+            
+            <div class="connection-panel">
+                <div id="connectionContainer" class="status-indicator">
+                    <span id="connectionDot" class="dot disconnected"></span>
+                    <span id="connectionText" class="status-text">Disconnected</span>
                 </div>
-
-                <div class="flex gap-2">
-                    <div id="mqttBadge" class="px-3 py-1.5 rounded-lg bg-black/40 border border-[#FF2A54]/30 flex items-center gap-2">
-                        <span class="status-dot offline" style="width:8px;height:8px;"></span>
-                        <span class="text-xs font-mono text-white/60">MQTT</span>
-                    </div>
-                    <div id="espBadge" class="px-3 py-1.5 rounded-lg bg-black/40 border border-[#FF2A54]/30 flex items-center gap-2">
-                        <span class="status-dot offline" style="width:8px;height:8px;"></span>
-                        <span class="text-xs font-mono text-white/60">ESP32</span>
-                    </div>
+                <div class="badges">
+                    <span id="mqttBadge" class="badge neutral">MQTT</span>
+                    <span id="espBadge" class="badge neutral">ESP32</span>
                 </div>
-
-                <div class="px-4 py-2 rounded-xl bg-black/20 border border-white/5 flex items-center gap-2">
-                    <span class="text-[#00F0FF]">🕐</span>
-                    <span id="lastUpdate" class="font-mono text-sm text-[#00F0FF]/80">--:--:--</span>
+                <div class="meta-info">
+                    <span>🕐 <span id="lastUpdate">--:--:--</span></span>
+                    <span>📦 <span id="dataCount">0</span> pkts</span>
                 </div>
             </div>
         </header>
 
-        <!-- ============ MAIN ============ -->
-        <main class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <!-- ============ MAIN GRID ============ -->
+        <main class="dashboard-grid">
             
-            <!-- LEFT COLUMN -->
-            <div class="md:col-span-5 lg:col-span-4 flex flex-col gap-6">
+            <!-- Overall Status -->
+            <section class="card status-card">
+                <h2>Water Quality Status</h2>
+                <div class="status-display">
+                    <div id="statusIconWrapper" class="status-icon-wrapper">
+                        <span>⏳</span>
+                    </div>
+                    <div class="status-info">
+                        <h3 id="waterStatusText">WAITING</h3>
+                        <p id="statusDetail">Connecting to sensor node...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sensor Parameters -->
+            <section class="card parameters-card">
+                <h2>Live Parameters</h2>
+                <div class="params-grid">
+                    <div class="param-box">
+                        <div class="param-header">
+                            <span>🧪 pH Level</span>
+                            <span id="phBadge" class="param-badge neutral">--</span>
+                        </div>
+                        <div class="param-value"><span id="phValue">0.0</span> <span class="unit">pH</span></div>
+                    </div>
+                    
+                    <div class="param-box">
+                        <div class="param-header">
+                            <span>💎 TDS</span>
+                            <span id="tdsBadge" class="param-badge neutral">--</span>
+                        </div>
+                        <div class="param-value"><span id="tdsValue">0</span> <span class="unit">ppm</span></div>
+                    </div>
+
+                    <div class="param-box">
+                        <div class="param-header">
+                            <span>🌊 Turbidity</span>
+                            <span id="turbBadge" class="param-badge neutral">--</span>
+                        </div>
+                        <div class="param-value"><span id="turbidityValue">0.0</span> <span class="unit">NTU</span></div>
+                    </div>
+
+                    <div class="param-box">
+                        <div class="param-header">
+                            <span>🌡️ Temperature</span>
+                            <span id="tempBadge" class="param-badge neutral">--</span>
+                        </div>
+                        <div class="param-value"><span id="tempValue">0.0</span> <span class="unit">°C</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Filter Status -->
+            <section class="card filter-card">
+                <h2>Filter System</h2>
+                <div class="filter-health-container">
+                    <div class="health-header">
+                        <span>Filter Health</span>
+                        <span id="filterHealth" class="health-percentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="healthBar" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
                 
-                <!-- HERO CARD: Water Status -->
-                <div class="glass-panel p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group min-h-[200px]">
-                    <div class="absolute w-40 h-40 border-[1px] border-white/5 rounded-full scale-150 group-hover:scale-125 transition-transform duration-700"></div>
-                    <div class="absolute w-32 h-32 border-[1px] border-white/5 rounded-full scale-110 group-hover:scale-90 transition-transform duration-700 delay-75"></div>
-                    
-                    <h2 class="text-xs font-bold text-[#00F0FF] uppercase tracking-[0.2em] mb-4 z-10">Water Purity Status</h2>
-                    
-                    <div id="statusIconWrapper" class="text-5xl mb-2 z-10 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                        ⏳
-                    </div>
-                    <div id="waterStatusText" class="text-3xl font-extrabold tracking-tight z-10 text-white/50 mb-1">
-                        AWAITING
-                    </div>
-                    <div id="statusDetail" class="text-sm text-white/40 font-mono z-10">
-                        System standing by...
-                    </div>
-                </div>
-
-                <!-- FILTER HEALTH CARD -->
-                <div class="glass-panel p-6">
-                    <div class="flex justify-between items-start mb-6">
-                        <div>
-                            <h2 class="text-xs font-bold text-[#00F0FF] uppercase tracking-[0.2em]">Filter Integrity</h2>
-                            <p class="text-xs text-white/40 font-mono mt-1">Membrane lifecycle</p>
-                        </div>
-                        <div class="p-2 bg-[#00F0FF]/10 rounded-lg text-[#00F0FF]">
-                            <span class="text-xl">🔧</span>
+                <div class="filter-stats">
+                    <div class="stat-item">
+                        <span>📅</span>
+                        <div class="stat-text">
+                            <span class="stat-label">Estimated Life</span>
+                            <span id="daysLeft" class="stat-val">0 days</span>
                         </div>
                     </div>
-
-                    <div class="flex items-end gap-2 mb-4">
-                        <span id="filterHealth" class="text-5xl font-extrabold value-display text-white">--</span>
-                        <span class="text-xl text-white/50 font-bold mb-1">%</span>
-                    </div>
-
-                    <div class="cyber-progress mb-6">
-                        <div id="healthBar" class="cyber-progress-fill w-0"></div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-black/20 rounded-lg p-3 border border-white/5">
-                            <div class="text-[10px] text-white/40 uppercase mb-1">Est. Remaining</div>
-                            <div id="daysLeft" class="font-mono text-sm text-[#00F0FF]">-- Days</div>
-                        </div>
-                        <div class="bg-black/20 rounded-lg p-3 border border-white/5">
-                            <div class="text-[10px] text-white/40 uppercase mb-1">Total Processed</div>
-                            <div id="volumeTotal" class="font-mono text-sm text-white">-- L</div>
+                    <div class="stat-item">
+                        <span>💧</span>
+                        <div class="stat-text">
+                            <span class="stat-label">Total Volume</span>
+                            <span id="volumeTotal" class="stat-val">0.0 L</span>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <!-- FILTER REPLACEMENT CARD -->
-                <div class="glass-panel p-5" id="filter-replacement-card">
-                    <h3 class="text-xs font-bold text-[#00F0FF] uppercase tracking-[0.2em] mb-3">
-                        🔧 Filter Status
-                    </h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="col-span-2">
-                            <div class="text-[10px] text-white/40 uppercase">Status Filter</div>
-                            <div id="filterReplaceStatus" class="text-sm font-bold text-[#00FF66] flex items-center gap-2">
-                                <span class="status-led led-green"></span>
-                                NORMAL
-                            </div>
-                        </div>
-                        <div>
-                            <div class="text-[10px] text-white/40 uppercase">Skor</div>
-                            <div id="filterReplaceScore" class="text-sm font-mono text-white">--</div>
-                        </div>
-                        <div>
-                            <div class="text-[10px] text-white/40 uppercase">Sisa Hari</div>
-                            <div id="filterReplaceDays" class="text-sm font-mono text-white">--</div>
-                        </div>
-                        <div class="col-span-2">
-                            <div class="text-[10px] text-white/40 uppercase">Keterangan</div>
-                            <div id="filterReplaceReason" class="text-xs text-white/60">--</div>
-                        </div>
-                        <div class="col-span-2">
-                            <div class="text-[10px] text-white/40 uppercase">Rekomendasi</div>
-                            <div id="filterReplaceRecommend" class="text-xs text-white/60">--</div>
-                        </div>
+            <!-- Maintenance Insights -->
+            <section class="card maintenance-card">
+                <h2>Maintenance & Insights</h2>
+                <div class="maintenance-content">
+                    <div class="insight-row">
+                        <span class="insight-label">Filter Status:</span>
+                        <span id="filterReplaceStatus" class="insight-val badge-neutral">Waiting</span>
+                    </div>
+                    <div class="insight-row">
+                        <span class="insight-label">Score:</span>
+                        <span id="filterReplaceScore" class="insight-val text-bold">0/100</span>
+                    </div>
+                    <div class="insight-row">
+                        <span class="insight-label">Days Left:</span>
+                        <span id="filterReplaceDays" class="insight-val text-bold">--</span>
+                    </div>
+                    <div class="insight-box">
+                        <h4>📋 Reason</h4>
+                        <p id="filterReplaceReason">No data yet.</p>
+                    </div>
+                    <div class="insight-box highlight">
+                        <h4>💡 Recommendation</h4>
+                        <p id="filterReplaceRecommend">Please wait for data synchronization...</p>
                     </div>
                 </div>
+            </section>
 
-            </div>
-
-            <!-- RIGHT COLUMN -->
-            <div class="md:col-span-7 lg:col-span-8 flex flex-col gap-6">
-                
-                <!-- 4 PARAMETER CARDS -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    
-                    <div class="glass-panel p-5">
-                        <h3 class="text-xs font-bold text-white/50 uppercase mb-1">🧪 pH</h3>
-                        <div class="flex items-baseline gap-1 my-3">
-                            <span id="phValue" class="text-3xl font-extrabold value-display">--</span>
-                        </div>
-                        <div id="phBadge" class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-white/40 border border-white/10 uppercase tracking-wider">WAIT</div>
-                    </div>
-
-                    <div class="glass-panel p-5">
-                        <h3 class="text-xs font-bold text-white/50 uppercase mb-1">💎 TDS</h3>
-                        <div class="flex items-baseline gap-1 my-3">
-                            <span id="tdsValue" class="text-3xl font-extrabold value-display">--</span>
-                            <span class="text-xs text-white/40 font-mono">ppm</span>
-                        </div>
-                        <div id="tdsBadge" class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-white/40 border border-white/10 uppercase tracking-wider">WAIT</div>
-                    </div>
-
-                    <div class="glass-panel p-5">
-                        <h3 class="text-xs font-bold text-white/50 uppercase mb-1">🌊 Turbidity</h3>
-                        <div class="flex items-baseline gap-1 my-3">
-                            <span id="turbidityValue" class="text-3xl font-extrabold value-display">--</span>
-                            <span class="text-xs text-white/40 font-mono">NTU</span>
-                        </div>
-                        <div id="turbBadge" class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-white/40 border border-white/10 uppercase tracking-wider">WAIT</div>
-                    </div>
-
-                    <div class="glass-panel p-5">
-                        <h3 class="text-xs font-bold text-white/50 uppercase mb-1">🌡️ Temperature</h3>
-                        <div class="flex items-baseline gap-1 my-3">
-                            <span id="tempValue" class="text-3xl font-extrabold value-display">--</span>
-                            <span class="text-xs text-white/40 font-mono">°C</span>
-                        </div>
-                        <div id="tempBadge" class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-white/40 border border-white/10 uppercase tracking-wider">WAIT</div>
-                    </div>
-
-                </div>
-
-                <!-- CHARTS -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    
-                    <div class="glass-panel p-5 h-[280px]">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xs font-bold text-white/70 uppercase tracking-widest flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-[#00F0FF]"></span> pH Telemetry
-                            </h2>
-                        </div>
-                        <div class="relative w-full h-[200px]">
-                            <canvas id="phChart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="glass-panel p-5 h-[280px]">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xs font-bold text-white/70 uppercase tracking-widest flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-[#00FF66]"></span> TDS Trend
-                            </h2>
-                        </div>
-                        <div class="relative w-full h-[200px]">
-                            <canvas id="tdsChart"></canvas>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
+            <!-- Raw Data -->
+            <section class="card debug-card" style="grid-column: 1 / -1;">
+                <h2>Raw Telemetry Data</h2>
+                <pre id="lastMessage" class="code-block">Awaiting JSON payload from ESP32...</pre>
+            </section>
         </main>
-
-        <!-- ============ FOOTER ============ -->
-        <footer class="glass-panel px-6 py-4 flex flex-wrap justify-between items-center gap-4 text-xs font-mono text-white/40">
-            <div class="flex gap-4">
-                <div class="flex items-center gap-2">
-                    <span class="text-[#00F0FF]">📦</span>
-                    <span id="dataCount">0 packets rx</span>
-                </div>
-                <div class="flex items-center gap-2 border-l border-white/10 pl-4">
-                    <span>📡</span>
-                    <span id="lastMessage">Terminal ready</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <span>System ID:</span>
-                <span class="text-[#00F0FF]">RO-NEXUS-01</span>
-            </div>
-        </footer>
     </div>
 
     <!-- ============ JAVASCRIPT ============ -->
