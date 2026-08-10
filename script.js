@@ -1,7 +1,8 @@
 /**
  * ============================================================
  * SMART RO WATER QUALITY MONITOR - MQTT Web Client
- * FULLY SYNCHRONIZED WITH ESP32 .ino
+ * BAHASA INDONESIA
+ * STATUS: NORMAL / CEK FILTER / GANTI FILTER
  * ============================================================
  */
 
@@ -25,6 +26,7 @@ const DOM = {
     waterStatusText: document.getElementById('waterStatusText'),
     statusIconWrapper: document.getElementById('statusIconWrapper'),
     statusDetail: document.getElementById('statusDetail'),
+    waterStatusBadge: document.getElementById('waterStatusBadge'),
     filterHealth: document.getElementById('filterHealth'),
     healthBar: document.getElementById('healthBar'),
     daysLeft: document.getElementById('daysLeft'),
@@ -39,9 +41,9 @@ const DOM = {
     tempBadge: document.getElementById('tempBadge'),
     filterReplaceStatus: document.getElementById('filterReplaceStatus'),
     filterReplaceScore: document.getElementById('filterReplaceScore'),
-    filterReplaceDays: document.getElementById('filterReplaceDays'),
     filterReplaceReason: document.getElementById('filterReplaceReason'),
     filterReplaceRecommend: document.getElementById('filterReplaceRecommend'),
+    anomalyCount: document.getElementById('anomalyCount'),
 };
 
 // ==================== STATE ====================
@@ -62,15 +64,91 @@ let state = {
     volume: null,
     flowRate: null,
     filterScore: null,
-    filterStatus: null,
-    filterStatusColor: null,
-    filterStatusEmoji: null,
+    // Status baru
+    waterStatus: 'MENUNGGU',     // NORMAL / CEK FILTER / GANTI FILTER
+    waterStatusClass: 'neutral', // normal / cek / ganti
+    anomalyList: [],
+    anomalyCount: 0,
 };
+
+// ==================== PARAMETER VALIDATION ====================
+function checkParameter(value, min, max, name) {
+    if (value === null || value === undefined) return { valid: true, anomaly: false };
+    if (value < min || value > max) {
+        return { valid: false, anomaly: true, name: name, value: value, min: min, max: max };
+    }
+    return { valid: true, anomaly: false };
+}
+
+function checkAllParameters(ph, tds, turbidity, temp) {
+    var anomalies = [];
+    
+    // pH: 6.5 - 9.8
+    var phCheck = checkParameter(ph, 6.5, 9.8, 'pH');
+    if (phCheck.anomaly) anomalies.push('pH (' + ph.toFixed(2) + ')');
+    
+    // TDS: < 50 ppm (ideal)
+    if (tds !== null && tds > 50) {
+        anomalies.push('TDS (' + Math.round(tds) + ' ppm)');
+    }
+    
+    // Turbidity: < 5 NTU
+    if (turbidity !== null && turbidity > 5) {
+        anomalies.push('Kekeruhan (' + turbidity.toFixed(2) + ' NTU)');
+    }
+    
+    // Temperature: 15 - 35 °C
+    var tempCheck = checkParameter(temp, 15, 35, 'Suhu');
+    if (tempCheck.anomaly) anomalies.push('Suhu (' + temp.toFixed(1) + '°C)');
+    
+    return anomalies;
+}
+
+// ==================== DETERMINE WATER STATUS ====================
+function determineWaterStatus(anomalies) {
+    var count = anomalies.length;
+    var anomalyText = anomalies.join(', ');
+    
+    if (count === 0) {
+        return {
+            status: 'NORMAL',
+            class: 'normal',
+            text: '✅ NORMAL',
+            badge: 'badge-normal',
+            detail: 'Semua parameter dalam batas normal. Air aman dikonsumsi.',
+            icon: '✅',
+            reason: 'Semua parameter normal',
+            recommendation: 'Lanjutkan pemantauan rutin.'
+        };
+    } else if (count === 1) {
+        return {
+            status: 'CEK FILTER',
+            class: 'cek',
+            text: '🟡 CEK FILTER',
+            badge: 'badge-cek',
+            detail: 'Ada 1 parameter yang tidak normal. Periksa filter dan sensor.',
+            icon: '⚠️',
+            reason: 'Parameter anomali: ' + anomalyText,
+            recommendation: 'Periksa filter dan kalibrasi sensor. Pantau terus perkembangannya.'
+        };
+    } else {
+        return {
+            status: 'GANTI FILTER',
+            class: 'ganti',
+            text: '🔴 GANTI FILTER',
+            badge: 'badge-ganti',
+            detail: 'Ada ' + count + ' parameter yang tidak normal. Filter perlu diganti!',
+            icon: '❌',
+            reason: 'Parameter anomali: ' + anomalyText,
+            recommendation: 'SEGERA GANTI FILTER! Sistem tidak berfungsi optimal.'
+        };
+    }
+}
 
 // ==================== MQTT LOGIC ====================
 function initMQTT() {
-    console.log('🔄 Connecting to MQTT...');
-    updateConnectionUI('connecting', 'Connecting...');
+    console.log('🔄 Menghubungkan ke MQTT...');
+    updateConnectionUI('connecting', 'Menghubungkan...');
     
     try {
         client = mqtt.connect(MQTT_BROKER, {
@@ -81,19 +159,19 @@ function initMQTT() {
         });
 
         client.on('connect', function() {
-            console.log('✅ Connected to MQTT Broker');
+            console.log('✅ Terhubung ke MQTT Broker');
             state.mqttConnected = true;
-            updateConnectionUI('connected', 'Connected');
+            updateConnectionUI('connected', 'Terhubung');
             DOM.mqttBadge.className = 'badge active';
             DOM.espBadge.className = 'badge neutral';
             
             client.subscribe(MQTT_TOPIC, { qos: 1 }, function(err) {
                 if (!err) {
-                    console.log('✅ Subscribed to topic:', MQTT_TOPIC);
-                    DOM.lastMessage.textContent = '✅ Subscribed to: ' + MQTT_TOPIC;
+                    console.log('✅ Berlangganan ke topic:', MQTT_TOPIC);
+                    DOM.lastMessage.textContent = '✅ Berlangganan ke: ' + MQTT_TOPIC;
                 } else {
-                    console.error('❌ Subscribe error:', err);
-                    DOM.lastMessage.textContent = '❌ Subscribe error: ' + err.message;
+                    console.error('❌ Gagal berlangganan:', err);
+                    DOM.lastMessage.textContent = '❌ Gagal berlangganan: ' + err.message;
                 }
             });
         });
@@ -120,7 +198,7 @@ function initMQTT() {
             updateConnectionUI('disconnected', 'Offline');
             DOM.mqttBadge.className = 'badge inactive';
             DOM.espBadge.className = 'badge inactive';
-            DOM.lastMessage.textContent = '⚠️ MQTT Offline - Reconnecting...';
+            DOM.lastMessage.textContent = '⚠️ MQTT Offline - Menghubungkan ulang...';
         });
 
     } catch (e) {
@@ -133,15 +211,14 @@ function initMQTT() {
 function handleIncomingData(payload) {
     try {
         const data = JSON.parse(payload);
-        console.log('📥 Data received:', data);
+        console.log('📥 Data diterima:', data);
         
-        // Update State
         state.messageCount++;
         state.lastUpdateTime = new Date();
         state.espOnline = true;
         state.lastData = data;
         
-        // Populate state values
+        // Populate state
         state.ph = data.ph !== undefined ? data.ph : null;
         state.tds = data.tds !== undefined ? data.tds : null;
         state.turbidity = data.turbidity_ntu !== undefined ? data.turbidity_ntu : null;
@@ -152,15 +229,28 @@ function handleIncomingData(payload) {
         state.volume = data.volume !== undefined ? data.volume : null;
         state.flowRate = data.flow_rate !== undefined ? data.flow_rate : null;
         state.filterScore = data.filter_score !== undefined ? data.filter_score : null;
-        state.filterStatus = data.filter_status || "NORMAL";
-        state.filterStatusColor = data.filter_status_color || "GREEN";
-        state.filterStatusEmoji = data.filter_status_emoji || "🟢";
+
+        // ========== CEK ANOMALI ==========
+        var anomalies = checkAllParameters(state.ph, state.tds, state.turbidity, state.temperature);
+        state.anomalyList = anomalies;
+        state.anomalyCount = anomalies.length;
+        
+        // ========== TENTUKAN STATUS ==========
+        var statusResult = determineWaterStatus(anomalies);
+        state.waterStatus = statusResult.status;
+        state.waterStatusClass = statusResult.class;
+        state.waterStatusText = statusResult.text;
+        state.waterStatusDetail = statusResult.detail;
+        state.waterStatusIcon = statusResult.icon;
+        state.waterStatusReason = statusResult.reason;
+        state.waterStatusRecommendation = statusResult.recommendation;
+        state.waterStatusBadgeClass = statusResult.badge;
 
         updateUI();
         
     } catch (e) {
-        console.error('❌ Failed to parse JSON:', e);
-        console.error('📄 Payload was:', payload);
+        console.error('❌ Gagal parse JSON:', e);
+        console.error('📄 Payload:', payload);
         DOM.lastMessage.textContent = '❌ Parse error: ' + e.message;
     }
 }
@@ -174,7 +264,7 @@ function updateConnectionUI(status, text) {
 function updateUI() {
     // 1. Connection Header
     DOM.espBadge.className = 'badge active';
-    DOM.dataCount.textContent = state.messageCount;
+    DOM.dataCount.textContent = state.messageCount + ' paket';
     if (state.lastUpdateTime) {
         DOM.lastUpdate.textContent = state.lastUpdateTime.toLocaleTimeString();
     }
@@ -184,56 +274,38 @@ function updateUI() {
         DOM.lastMessage.textContent = JSON.stringify(state.lastData, null, 2);
     }
     
-    // 3. Overall Status
-    var status = state.status || "MENUNGGU";
-    DOM.waterStatusText.textContent = status;
+    // 3. WATER STATUS (BARU)
+    DOM.waterStatusText.textContent = state.waterStatus || 'MENUNGGU';
+    DOM.waterStatusText.className = state.waterStatusClass + '-text';
+    DOM.statusIconWrapper.className = 'status-icon-wrapper ' + state.waterStatusClass;
+    DOM.statusIconWrapper.innerHTML = '<span>' + (state.waterStatusIcon || '⏳') + '</span>';
+    DOM.statusDetail.textContent = state.waterStatusDetail || 'Menunggu data...';
     
-    var wrapperClass = 'status-icon-wrapper good';
-    var detailText = "Water is safe for consumption.";
-    var textClass = 'good-text';
-    var iconText = '✅';
-    
-    if (status === "TIDAK LAYAK" || status === "BAHAYA") {
-        wrapperClass = 'status-icon-wrapper bad';
-        detailText = "Water quality is unsafe. Do not consume.";
-        textClass = 'bad-text';
-        iconText = '❌';
-    } else if (status === "PERINGATAN" || status === "KURANG LAYAK" || status === "CUKUP") {
-        wrapperClass = 'status-icon-wrapper warning';
-        detailText = "Parameters are borderline. Proceed with caution.";
-        textClass = 'warning-text';
-        iconText = '⚠️';
-    } else if (status === "LAYAK" || status === "SAFE") {
-        wrapperClass = 'status-icon-wrapper good';
-        detailText = "Water is safe for consumption.";
-        textClass = 'good-text';
-        iconText = '✅';
+    // Status Badge
+    if (DOM.waterStatusBadge) {
+        DOM.waterStatusBadge.textContent = state.waterStatusText || '⏳ Menunggu Data';
+        DOM.waterStatusBadge.className = 'status-badge ' + (state.waterStatusBadgeClass || 'badge-neutral');
     }
-    
-    DOM.statusIconWrapper.className = wrapperClass;
-    DOM.statusIconWrapper.innerHTML = '<span>' + iconText + '</span>';
-    DOM.statusDetail.textContent = detailText;
-    DOM.waterStatusText.className = textClass;
     
     // 4. Sensors
     if (state.ph !== null) {
         DOM.phValue.textContent = state.ph.toFixed(2);
-        updateParamBadge(DOM.phBadge, state.ph, 6.5, 8.5, "Safe", "Warn", "Danger");
+        updateParamBadge(DOM.phBadge, state.ph, 6.5, 9.8, "Normal", "Warn", "Anomali");
     }
     
     if (state.tds !== null) {
         DOM.tdsValue.textContent = Math.round(state.tds);
-        updateParamBadge(DOM.tdsBadge, state.tds, 0, 50, "Pure", "High", "Very High", true);
+        updateParamBadge(DOM.tdsBadge, state.tds, 0, 50, "Normal", "Warn", "Tinggi", true);
     }
     
     if (state.turbidity !== null) {
         DOM.turbidityValue.textContent = state.turbidity.toFixed(2);
-        updateParamBadge(DOM.turbBadge, state.turbidity, 0, 5, "Clear", "Cloudy", "Dirty", true);
+        updateParamBadge(DOM.turbBadge, state.turbidity, 0, 5, "Jernih", "Keruh", "Sangat Keruh", true);
     }
     
     if (state.temperature !== null) {
         DOM.tempValue.textContent = state.temperature.toFixed(1);
-        updateParamBadge(DOM.tempBadge, state.temperature, 15, 35, "Normal", "Warn", "Alert");
+        updateParamBadge(DOM.tempBadge, state.temperature, 15, 35, "Normal", "Warn", "Anomali");
     }
     
     // 5. Filter Health
@@ -252,90 +324,62 @@ function updateUI() {
     }
     
     if (state.daysLeft !== null) {
-        DOM.daysLeft.textContent = state.daysLeft + ' days';
+        DOM.daysLeft.textContent = state.daysLeft + ' hari';
     }
     
     if (state.volume !== null) {
         DOM.volumeTotal.textContent = state.volume.toFixed(2) + ' L';
     }
     
-    // 6. Filter Status
-    updateFilterStatus({
-        filterScore: state.filterScore || state.health || 0,
-        filterStatus: state.filterStatus,
-        filterStatusColor: state.filterStatusColor,
-        filterStatusEmoji: state.filterStatusEmoji,
-        daysLeft: state.daysLeft
-    });
+    // 6. FILTER STATUS
+    updateFilterStatus();
 }
 
 // ==================== FILTER STATUS ====================
-function updateFilterStatus(data) {
-    if (!data) return;
+function updateFilterStatus() {
+    var filterScore = state.filterScore || state.health || 0;
+    var daysLeft = state.daysLeft || 0;
+    var anomalyCount = state.anomalyCount || 0;
     
-    var filterScore = data.filterScore || 0;
-    var daysLeft = data.daysLeft || 0;
+    // Status berdasarkan waterStatus
+    var statusText = state.waterStatusText || '⏳ Menunggu';
+    var statusClass = 'badge-neutral';
     
-    // Gunakan status dari ESP32 atau hitung ulang
-    var statusText = data.filterStatus || '';
-    var statusColor = data.filterStatusColor || '';
-    var statusEmoji = data.filterStatusEmoji || '';
-    
-    // Jika tidak ada status dari ESP32, hitung berdasarkan skor
-    if (!statusText) {
-        if (filterScore < 40) {
-            statusText = 'GANTI';
-            statusColor = 'RED';
-            statusEmoji = '🔴';
-        } else if (filterScore < 70) {
-            statusText = 'CEK';
-            statusColor = 'YELLOW';
-            statusEmoji = '🟡';
-        } else {
-            statusText = 'NORMAL';
-            statusColor = 'GREEN';
-            statusEmoji = '🟢';
-        }
-    }
-    
-    // Map color to CSS class
-    var badgeClass = 'badge-success';
-    var statusDisplay = '✅ Normal';
-    
-    switch(statusColor.toUpperCase()) {
-        case 'GREEN':
-            badgeClass = 'badge-success';
-            statusDisplay = '✅ ' + statusText;
-            break;
-        case 'YELLOW':
-            badgeClass = 'badge-warning';
-            statusDisplay = '⚠️ ' + statusText;
-            break;
-        case 'RED':
-            badgeClass = 'badge-danger';
-            statusDisplay = '🔴 ' + statusText;
-            break;
-        default:
-            badgeClass = 'badge-neutral';
-            statusDisplay = '⏳ ' + statusText;
+    if (state.waterStatusClass === 'normal') {
+        statusClass = 'badge-success';
+    } else if (state.waterStatusClass === 'cek') {
+        statusClass = 'badge-warning';
+    } else if (state.waterStatusClass === 'ganti') {
+        statusClass = 'badge-danger';
     }
     
     // Update UI
     if (DOM.filterReplaceStatus) {
-        DOM.filterReplaceStatus.textContent = statusDisplay;
-        DOM.filterReplaceStatus.className = 'insight-val ' + badgeClass;
+        DOM.filterReplaceStatus.textContent = statusText;
+        DOM.filterReplaceStatus.className = 'insight-val ' + statusClass;
     }
     
     if (DOM.filterReplaceScore) {
         DOM.filterReplaceScore.textContent = Math.round(filterScore) + '/100';
     }
     
-    if (DOM.filterReplaceDays) {
-        if (daysLeft > 0) {
-            DOM.filterReplaceDays.textContent = daysLeft + ' days';
+    if (DOM.anomalyCount) {
+        DOM.anomalyCount.textContent = anomalyCount;
+        if (anomalyCount === 0) {
+            DOM.anomalyCount.className = 'insight-val text-bold text-green';
+        } else if (anomalyCount === 1) {
+            DOM.anomalyCount.className = 'insight-val text-bold text-yellow';
         } else {
-            DOM.filterReplaceDays.textContent = '⚠️ Segera!';
+            DOM.anomalyCount.className = 'insight-val text-bold text-red';
         }
+    }
+    
+    if (DOM.filterReplaceReason) {
+        DOM.filterReplaceReason.textContent = state.waterStatusReason || 'Menunggu data dari sensor...';
+    }
+    
+    if (DOM.filterReplaceRecommend) {
+        DOM.filterReplaceRecommend.textContent = state.waterStatusRecommendation || 'Silakan tunggu sinkronisasi data...';
     }
 }
 
