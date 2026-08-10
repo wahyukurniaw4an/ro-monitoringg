@@ -27,30 +27,29 @@
 ## 📑 Daftar Isi
 - [✨ Overview](#-overview)
 - [🌐 Live Demo](#-live-demo)
-- [📊 Parameter yang Dimonitor](#-parameter-yang-dimonitor)
+- [📊 Parameter RO yang Dimonitor](#-parameter-ro-yang-dimonitor)
 - [🎯 Fitur Dashboard](#-fitur-dashboard)
 - [🏗️ System Architecture](#%EF%B8%8F-system-architecture)
+- [📊 Flowchart Dashboard](#-flowchart-dashboard)
 - [📁 Project Structure](#-project-structure)
 - [⚙️ Installation](#%EF%B8%8F-installation)
 - [🚀 Usage](#-usage)
 - [📦 Dependencies](#-dependencies)
 - [🔧 Configuration](#-configuration)
 - [🐞 Troubleshooting](#-troubleshooting)
-- [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
 
 ---
 
 ## ✨ Overview
 
-**Smart RO Water Quality Monitor Dashboard** adalah antarmuka web untuk memonitor kualitas air Reverse Osmosis secara real-time. Data diterima dari ESP32 melalui MQTT dan ditampilkan dalam dashboard modern dengan grafik interaktif.
+**Smart RO Water Quality Monitor Dashboard** adalah antarmuka web untuk memonitor kualitas air Reverse Osmosis secara real-time. Data diterima dari ESP32 melalui MQTT dan ditampilkan dalam dashboard modern dengan status filter yang jelas: **NORMAL / CEK FILTER / GANTI FILTER**.
 
 ### 🎯 Cara Kerja
-1. **ESP32** membaca sensor dan mengirim data ke MQTT
-2. **Dashboard** subscribe ke topic MQTT
-3. **Data** ditampilkan secara real-time
-4. **Grafik** menunjukkan tren pH dan TDS
-5. **Alert** muncul jika kualitas air menurun
+1. **ESP32** membaca sensor dan mengirim data ke MQTT setiap 5 detik
+2. **Dashboard** subscribe ke topic MQTT `watermon/all`
+3. **Data** ditampilkan secara real-time dengan status otomatis
+4. **Status Filter** ditentukan berdasarkan jumlah parameter anomali
 
 ---
 
@@ -60,27 +59,34 @@
 
 ---
 
-## 📊 Parameter yang Dimonitor
+## 📊 Parameter RO yang Dimonitor
 
-| Parameter | Display | Rentang Normal | Sumber Data |
-|-----------|---------|----------------|-------------|
-| **pH** | 0.00 - 14.00 | 6.5 - 9.8 | `data.ph` |
-| **TDS** | 0 - 9999 ppm | < 500 ppm | `data.tds` |
-| **Turbidity** | 0 - 100 NTU | < 5 NTU | `data.turbidity_ntu` |
-| **Temperature** | -55 - 125 °C | 15 - 35 °C | `data.temperature` |
-| **Volume** | 0 - ∞ L | - | `data.volume` |
-| **Filter Health** | 0 - 100% | > 70% | `data.health` |
-| **Days Left** | 0 - ∞ | - | `data.days_left` |
-| **Flow Rate** | 0 - ∞ L/min | - | `data.flow_rate` |
+### Parameter Normal RO
 
-### 🏷️ Badge Status
+| Parameter | Normal | Anomali | Sumber Data |
+|-----------|--------|---------|-------------|
+| **pH** | 6.5 - 8.5 | < 6.5 atau > 8.5 | `data.ph` |
+| **TDS** | 0 - 200 ppm | > 200 ppm | `data.tds` |
+| **Kekeruhan** | 0 - 6 NTU | > 6 NTU | `data.turbidity_ntu` |
+| **Suhu** | 20 - 30 °C | < 20 atau > 30 | `data.temperature` |
 
-| Parameter | Optimal | Warning | Kritis |
-|-----------|---------|---------|--------|
-| **pH** | 🟢 OPTIMAL | 🟡 WARNING | 🔴 DANGER |
-| **TDS** | 🟢 PURE | 🟡 HIGH TDS | 🔴 VERY HIGH |
-| **Turbidity** | 🟢 CLEAR | 🟡 CLOUDY | 🔴 DIRTY |
-| **Temperature** | 🟢 NOMINAL | 🟡 WARN | 🔴 ALERT |
+### Status Filter
+
+| Jumlah Anomali | Status | Warna | Emoji |
+|----------------|--------|-------|-------|
+| 0 | **NORMAL** | 🟢 Hijau | ✅ |
+| 1 | **CEK FILTER** | 🟡 Kuning | ⚠️ |
+| ≥ 2 | **GANTI FILTER** | 🔴 Merah | ❌ |
+
+### Parameter Tambahan
+
+| Parameter | Display | Sumber Data |
+|-----------|---------|-------------|
+| **Volume** | 0 - ∞ L | `data.volume` |
+| **Flow Rate** | 0 - ∞ L/min | `data.flow_rate` |
+| **Filter Health** | 0 - 100% | `data.health` |
+| **Days Left** | 0 - ∞ | `data.days_left` |
+| **Filter Score** | 0 - 100 | `data.filter_score` |
 
 ---
 
@@ -91,35 +97,31 @@
 - Status koneksi MQTT real-time
 - Indikator ESP32 online/offline
 
-### ✅ Interactive Charts
-- Grafik pH (0-14) dengan Chart.js
-- Grafik TDS (0-500 ppm) dengan Chart.js
-- Rolling data 20 titik terakhir
-- Tooltip interaktif
-
 ### ✅ Water Quality Status
-- Status LAYAK / TIDAK LAYAK
+- Status **NORMAL / CEK FILTER / GANTI FILTER**
 - Ikon visual (✅ / ⚠️ / ❌)
 - Penjelasan detail status
+
+### ✅ Parameter Sensor
+- pH dengan range normal 6.5 - 8.5
+- TDS dengan range normal 0 - 200 ppm
+- Kekeruhan dengan range normal 0 - 6 NTU
+- Suhu dengan range normal 20 - 30 °C
 
 ### ✅ Filter Health Monitor
 - Estimasi umur filter (0-100%)
 - Progress bar dengan warna indikator
 - Estimasi hari tersisa
 
-### ✅ Volume Tracking
-- Total produksi air dalam Liter
-- Debit air (L/min)
-- Tracking kumulatif
-
 ### ✅ Filter Replacement Logic
-- Status penggantian filter
-- Skor filter berdasarkan 3 parameter
-- Alasan dan rekomendasi
+- Status filter berdasarkan jumlah parameter anomali
+- Skor filter (0-100)
+- Daftar parameter anomali
+- Rekomendasi tindakan
 
 ### ✅ Responsive Design
 - Mobile & Desktop friendly
-- Dark theme dengan efek glassmorphism
+- Light theme dengan efek glassmorphism
 - Grid layout adaptif
 
 ---
@@ -127,40 +129,73 @@
 ## 🏗️ System Architecture
 
 ```text
-┌───────────────────────────────────────────────────────────────┐
-│                      GITHUB PAGES                             │
-│                 (https://user.github.io/ro)                   │
-│  ┌────────────────────────────────────────────────────────┐   │
-│  │                    WEB DASHBOARD                       │   │
-│  │  ┌───────────────┐  ┌───────────────┐  ┌────────────┐  │   │
-│  │  │  Water Status │  │ Filter Health │  │   Charts   │  │   │
-│  │  └───────────────┘  └───────────────┘  └────────────┘  │   │
-│  │  ┌───────────────┐  ┌───────────────┐  ┌────────────┐  │   │
-│  │  │  pH / TDS     │  │ Turbidity/Temp│  │  Volume    │  │   │
-│  │  └───────────────┘  └───────────────┘  └────────────┘  │   │
-│  └────────────────────────────────────────────────────────┘   │
-└───────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                      GITHUB PAGES                              │
+│                 (https://user.github.io/ro)                    │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    WEB DASHBOARD                        │   │
+│  │  ┌───────────────┐  ┌───────────────┐  ┌────────────┐   │   │
+│  │  │  Water Status │  │ Filter Health │  │  Parameter │   │   │
+│  │  └───────────────┘  └───────────────┘  └────────────┘   │   │
+│  │  ┌───────────────┐  ┌───────────────┐  ┌────────────┐   │   │
+│  │  │  pH / TDS     │  │ Turbidity/Temp│  │  Volume    │   │   │
+│  │  └───────────────┘  └───────────────┘  └────────────┘   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────┘
                                     │
                                     │ MQTT over WebSocket (WSS)
                                     ▼
-┌────────────────────────────────────────────────────────────────┐
-│                      MQTT BROKER (HiveMQ)                      │
-│                    broker.hivemq.com:8884                      │
-│                   Topic: watermon/all                          │
-└────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      MQTT BROKER (HiveMQ)                       │
+│                    broker.hivemq.com:8884                       │
+│                   Topic: watermon/all                           │
+└─────────────────────────────────────────────────────────────────┘
                                     │
                                     │ MQTT over TCP
                                     ▼
-┌────────────────────────────────────────────────────────────────┐
-│                            ESP32                               │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │                     SENSORS                             │   │
-│  │  pH, TDS, Turbidity, Temperature, Flow                  │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                             ESP32                               │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │                     SENSORS                             │   │
+│   │  pH, TDS, Turbidity, Temperature, Flow                  │   │
+│   └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Data Flow
+---
+
+## 📊 Flowchart Dashboard
+
+### Flowchart Utama Dashboard
+```mermaid
+flowchart TD
+    START([START]) --> LOAD["Load Dashboard<br/>index.html + style.css + script.js"]
+    LOAD --> INIT["Inisialisasi MQTT<br/>connect ke broker.hivemq.com"]
+    INIT --> CONNECT{"MQTT Connected?"}
+    CONNECT -->|Ya| SUBSCRIBE["Subscribe ke topic<br/>watermon/all"]
+    CONNECT -->|Tidak| RETRY["Retry Connect<br/>(3 detik)"]
+    RETRY --> INIT
+    
+    SUBSCRIBE --> WAIT["Menunggu Data"]
+    WAIT --> MESSAGE{"Ada Message?"}
+    MESSAGE -->|Ya| PARSE["Parse JSON Payload"]
+    MESSAGE -->|Tidak| WAIT
+    
+    PARSE --> CHECK["Check Parameters<br/>pH: 6.5-8.5<br/>TDS: 0-200 ppm<br/>NTU: 0-6<br/>Suhu: 20-30°C"]
+    CHECK --> COUNT["Hitung Anomali<br/>countAnomalies()"]
+    COUNT --> STATUS["Tentukan Status<br/>0 = NORMAL<br/>1 = CEK FILTER<br/>≥2 = GANTI FILTER"]
+    STATUS --> UPDATE["Update UI<br/>- Water Status<br/>- Sensor Values<br/>- Filter Status<br/>- Recommendations"]
+    UPDATE --> WAIT
+    
+    classDef startEnd fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#000
+    classDef init fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef loop fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    class START startEnd
+    class LOAD,INIT,RETRY init
+    class CONNECT,SUBSCRIBE,WAIT,MESSAGE,PARSE,CHECK,COUNT,STATUS,UPDATE loop
+```
+
+### Flowchart Data Flow
 ```mermaid
 sequenceDiagram
     participant E as ESP32
@@ -170,8 +205,11 @@ sequenceDiagram
     loop Every 5 seconds
         E->>M: Publish JSON (watermon/all)
         M->>D: Broadcast JSON
-        D->>D: Parse & Update UI
-        D->>D: Update Charts
+        D->>D: Parse JSON
+        D->>D: Check Parameters
+        D->>D: Count Anomalies
+        D->>D: Determine Status
+        D->>D: Update UI
     end
     
     alt MQTT Disconnected
@@ -189,7 +227,7 @@ smart-ro-monitor/
 ├── 📄 index.html                 # Main Dashboard
 ├── 📜 script.js                  # MQTT + Logic
 ├── 🎨 style.css                  # Styling & Responsive
-├── 📄 README.md                  # Dokumentasi
+├── 📄 README.md                  # Dokumentasi Dashboard
 ├── 📁 assets/                    # Gambar & screenshot
 └── 📁 esp32/                     # ESP32 Firmware
     ├── 📄 smart_ro_monitor.ino
@@ -223,9 +261,6 @@ python -m http.server 8080
 
 # Node.js
 npx http-server . -p 8080
-
-# PHP
-php -S localhost:8080
 ```
 
 ### 3. ESP32 Setup
@@ -245,16 +280,16 @@ php -S localhost:8080
 ### Connection Status
 | Status | Warna | Arti |
 |--------|-------|------|
-| SYSTEM ONLINE | 🟢 | MQTT Terhubung |
-| CONNECTION LOST | 🔴 | MQTT Terputus |
-| AWAITING NODE | 🟡 | Menunggu data ESP32 |
+| Terhubung | 🟢 | MQTT Terhubung |
+| Terputus | 🔴 | MQTT Terputus |
+| Menghubungkan... | 🟡 | MQTT Connecting |
 
-### Interpretasi Data
+### Interpretasi Status
 | Status | Arti | Tindakan |
 |--------|------|----------|
-| SAFE TO DRINK | ✅ Air layak konsumsi | Lanjutkan pemantauan |
-| CAUTION | ⚠️ Parameter mendekati batas | Periksa sensor & filter |
-| NOT SAFE | ❌ Air tidak layak | Jangan konsumsi, cek sistem |
+| ✅ NORMAL | Semua parameter normal | Lanjutkan pemantauan |
+| 🟡 CEK FILTER | 1 parameter anomali | Periksa filter & sensor |
+| 🔴 GANTI FILTER | ≥ 2 parameter anomali | Segera ganti filter |
 
 ---
 
@@ -263,9 +298,8 @@ php -S localhost:8080
 ### Frontend (CDN)
 | Library | Version | Purpose |
 |---------|---------|---------|
-| [Chart.js](https://www.chartjs.org/) | 4.4.1 | Grafik real-time |
-| [MQTT.js](https://github.com/mqttjs/MQTT.js) | 5.0.0 | MQTT over WebSocket |
-| [Font Awesome](https://fontawesome.com/) | 6.5.0 | Ikon |
+| [Chart.js](https://www.chartjs.org/) | 3.9.1 | Grafik real-time (optional) |
+| [MQTT.js](https://github.com/mqttjs/MQTT.js) | 4.3.7 | MQTT over WebSocket |
 | [Google Fonts](https://fonts.google.com/) | - | Outfit & JetBrains Mono |
 
 ### ESP32 (Arduino)
@@ -288,6 +322,19 @@ const MQTT_BROKER = "wss://broker.hivemq.com:8884/mqtt";
 const MQTT_TOPIC = "watermon/all";
 ```
 
+### Parameter RO
+```javascript
+// script.js
+const PARAM_RO = {
+    phMin: 6.5,
+    phMax: 8.5,
+    tdsMax: 200,
+    ntuMax: 6,
+    tempMin: 20,
+    tempMax: 30
+};
+```
+
 ### ESP32 Configuration
 ```cpp
 // smart_ro_monitor.ino
@@ -295,14 +342,6 @@ const MQTT_TOPIC = "watermon/all";
 #define MQTT_PORT 1883
 #define MQTT_CLIENT_ID "esp32-ro-monitor-001"
 #define MQTT_TOPIC_ALL "watermon/all"
-```
-
-### Filter Replacement Parameters
-```cpp
-// water_rules.h
-const float MAX_VOLUME_LITER = 30000.0;  // 30.000 liter
-// Bobot: Volume 50%, TDS 50%
-// pH hanya sebagai info (bukan indikator kerusakan filter)
 ```
 
 ---
@@ -323,14 +362,14 @@ const float MAX_VOLUME_LITER = 30000.0;  // 30.000 liter
 | JSON parse error | Buka Console Browser (F12) |
 | Topic salah | Cek `watermon/all` |
 | ESP32 offline | Periksa Serial Monitor |
-| Payload terlalu besar | Update ESP32 dengan versi minimal |
+| Payload terlalu besar | Update ESP32 dengan minimal payload |
 
-### Tampilan Rusak
+### Status Filter Salah
 | Masalah | Solusi |
 |---------|--------|
-| Font Awesome tidak load | Ganti CDN ke `cdnjs` |
-| CSS tidak apply | Clear cache browser |
-| Chart tidak muncul | Cek Console untuk error |
+| Parameter RO salah | Cek range parameter di script.js |
+| Anomali tidak terdeteksi | Cek nilai parameter yang diterima |
+| Status tidak update | Refresh dashboard |
 
 ### Debug Mode
 ```javascript
@@ -341,49 +380,15 @@ console.log(debug.state);
 // Cek data terakhir
 console.log(debug.state.lastData);
 
-// Cek DOM
-console.log(debug.DOM);
+// Cek parameter
+console.log(debug.state.ph, debug.state.tds);
 ```
-
----
-
-## 🤝 Contributing
-
-Kontribusi sangat diterima! 
-
-### Cara Berkontribusi
-1. **Fork** repository ini
-2. **Create** feature branch (`git checkout -b feature/NewFeature`)
-3. **Commit** changes (`git commit -m 'Add NewFeature'`)
-4. **Push** to branch (`git push origin feature/NewFeature`)
-5. **Open** Pull Request
-
-### Area Pengembangan
-- [ ] Tambah grafik turbidity & temperature
-- [ ] Export data ke CSV
-- [ ] Notifikasi push (Telegram/WhatsApp)
-- [ ] Multi-ESP32 support
-- [ ] Data logging historis
-- [ ] Dark/Light theme toggle
 
 ---
 
 ## 📄 License
 
 MIT License © 2026
-
-```text
-MIT License
-
-Copyright (c) 2026
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-```
 
 ---
 
